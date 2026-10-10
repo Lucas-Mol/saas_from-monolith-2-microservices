@@ -1,4 +1,5 @@
 # Local environment. Passwords below are development-only defaults; override them through a .env file.
+# Each phase has a profile: `docker compose up` is phase 0, `docker compose --profile phase1 up` adds the gateway.
 name: agenda-saas
 
 x-legacy-common: &legacy-common
@@ -60,6 +61,24 @@ services:
       TZ: ${TZ:-America/Sao_Paulo}
     ports:
       - "127.0.0.1:8082:8080"
+
+  # Phase 1+: single entry point. Tenants are addressed as <tenant>.localhost:8080 (or with an X-Tenant-ID header).
+  gateway:
+    profiles: ["phase1"]
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    image: agenda/gateway:dev
+    restart: unless-stopped
+    depends_on:
+      - legacy-acme
+      - legacy-bella
+    environment:
+      LEGACY_ACME_URI: http://legacy-acme:8080
+      LEGACY_BELLA_URI: http://legacy-bella:8080
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "127.0.0.1:8080:8080"
 
 volumes:
   pgdata:
