@@ -5,6 +5,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { createApiClient } from './api/client';
 import { routingStore } from './api/routing';
 import { backofficeUrl, identityFromAccessToken } from './auth/claims';
+import { currentPath } from './auth/returnTo';
 import { DebugFooter } from './components/DebugFooter';
 import { Agenda } from './pages/Agenda';
 import { Customers } from './pages/Customers';
@@ -20,18 +21,18 @@ export function App() {
 
   useEffect(() => {
     if (!auth.isLoading && !auth.isAuthenticated && !auth.activeNavigator && !auth.error) {
-      void auth.signinRedirect();
+      void auth.signinRedirect({ state: { returnTo: currentPath() } });
     }
   }, [auth]);
 
-  useEffect(() => auth.events.addUserSignedOut(() => void auth.removeUser()), [auth]);
+
   useEffect(() => auth.events.addSilentRenewError(() => void auth.removeUser()), [auth]);
 
   if (auth.error) {
     return (
       <main className="center">
         <p className="error">Sign-in failed: {auth.error.message}</p>
-        <button onClick={() => void auth.signinRedirect()}>Try again</button>
+        <button onClick={() => void auth.signinRedirect({ state: { returnTo: currentPath() } })}>Try again</button>
       </main>
     );
   }

@@ -1,5 +1,7 @@
-import { InMemoryWebStorage, WebStorageStateStore } from 'oidc-client-ts';
+import { InMemoryWebStorage, type User, WebStorageStateStore } from 'oidc-client-ts';
 import type { AuthProviderProps } from 'react-oidc-context';
+
+import { safeReturnTo } from './returnTo';
 
 const authority = import.meta.env.VITE_OIDC_AUTHORITY ?? 'http://keycloak.localhost:8180/realms/agenda';
 
@@ -11,8 +13,9 @@ export const oidcConfig: AuthProviderProps = {
   scope: 'openid profile email',
   userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),
   automaticSilentRenew: true,
-  monitorSession: true,
-  onSigninCallback: () => {
-    window.history.replaceState({}, document.title, window.location.pathname);
+  monitorSession: false,
+  onSigninCallback: (user: User | undefined) => {
+    window.history.replaceState({}, document.title, safeReturnTo(user?.state));
+    window.dispatchEvent(new PopStateEvent('popstate'));
   },
 };
