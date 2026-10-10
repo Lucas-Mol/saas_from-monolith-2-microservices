@@ -1,0 +1,10 @@
+{
+  "status" : 409,
+  "body" : {
+    "timestamp" : "2026-01-12T08:00:00",
+    "status" : 409,
+    "error" : "Conflict",
+    "message" : "Only SCHEDULED or CONFIRMED appointments can be cancelled (current: CANCELLED)",
+    "path" : "/api/appointments/7/cancel"
+  }
+}

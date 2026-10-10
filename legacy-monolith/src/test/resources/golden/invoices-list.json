@@ -1,0 +1,17 @@
+{
+  "status" : 200,
+  "body" : [ {
+    "id" : 1,
+    "customerId" : 1,
+    "status" : "PAID",
+    "total" : 200.00,
+    "issuedAt" : "2026-01-06T09:00:00",
+    "paidAt" : "2026-01-07T15:30:00",
+    "lines" : [ {
+      "id" : 1,
+      "appointmentId" : 4,
+      "description" : "Nutrition session with Dr. Rui Test on 2026-01-05",
+      "amount" : 200.00
+    } ]
+  } ]
+}

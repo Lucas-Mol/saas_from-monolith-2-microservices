@@ -1,0 +1,65 @@
+# Local environment. Passwords below are development-only defaults; override them through a .env file.
+name: agenda-saas
+
+x-legacy-common: &legacy-common
+  build:
+    context: .
+    dockerfile: legacy-monolith/Dockerfile
+  image: agenda/legacy-monolith:dev
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev}
+      LEGACY_ACME_DB_PASSWORD: ${LEGACY_ACME_DB_PASSWORD:-legacy_acme_dev}
+      LEGACY_BELLA_DB_PASSWORD: ${LEGACY_BELLA_DB_PASSWORD:-legacy_bella_dev}
+      TZ: ${TZ:-America/Sao_Paulo}
+      PGTZ: ${TZ:-America/Sao_Paulo}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  legacy-acme:
+    <<: *legacy-common
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/legacy_acme
+      DB_USERNAME: legacy_acme
+      DB_PASSWORD: ${LEGACY_ACME_DB_PASSWORD:-legacy_acme_dev}
+      FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed/acme
+      LEGACY_INSTANCE_NAME: Acme Clinic
+      LEGACY_CANCELLATION_MIN_HOURS: 24
+      # Both instances share the localhost cookie jar (cookies ignore ports), so session cookies need distinct names.
+      SESSION_COOKIE_NAME: ACME_SESSION
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "127.0.0.1:8081:8080"
+
+  legacy-bella:
+    <<: *legacy-common
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/legacy_bella
+      DB_USERNAME: legacy_bella
+      DB_PASSWORD: ${LEGACY_BELLA_DB_PASSWORD:-legacy_bella_dev}
+      FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed/bella
+      LEGACY_INSTANCE_NAME: Bella Salon
+      LEGACY_CANCELLATION_MIN_HOURS: 12
+      SESSION_COOKIE_NAME: BELLA_SESSION
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "127.0.0.1:8082:8080"
+
+volumes:
+  pgdata:

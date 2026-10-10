@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Customers')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main>
+    <h1>Customers</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <table>
+        <thead><tr><th>#</th><th>Name</th><th>E-mail</th><th>Phone</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr th:each="c : ${customers}">
+            <td th:text="${c.id}"></td>
+            <td th:text="${c.fullName}"></td>
+            <td th:text="${c.email}"></td>
+            <td th:text="${c.phone}"></td>
+            <td th:text="${c.notes}"></td>
+        </tr>
+        </tbody>
+    </table>
+    <h2>New customer</h2>
+    <form method="post" th:action="@{/backoffice/customers}" class="stacked">
+        <label>Full name <input name="fullName" maxlength="150" required></label>
+        <label>E-mail <input type="email" name="email" maxlength="150"></label>
+        <label>Phone <input name="phone" maxlength="30"></label>
+        <label>Birth date <input type="date" name="birthDate"></label>
+        <label>Notes <textarea name="notes" maxlength="2000"></textarea></label>
+        <button type="submit">Create</button>
+    </form>
+</main>
+</body>
+</html>

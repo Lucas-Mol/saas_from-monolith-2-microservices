@@ -1,0 +1,10 @@
+{
+  "status" : 422,
+  "body" : {
+    "timestamp" : "2026-01-12T08:00:00",
+    "status" : 422,
+    "error" : "Unprocessable Entity",
+    "message" : "End time must be after start time",
+    "path" : "/api/appointments"
+  }
+}

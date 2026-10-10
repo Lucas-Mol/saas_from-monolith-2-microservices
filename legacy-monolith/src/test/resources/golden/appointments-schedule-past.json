@@ -1,0 +1,10 @@
+{
+  "status" : 422,
+  "body" : {
+    "timestamp" : "2026-01-12T08:00:00",
+    "status" : 422,
+    "error" : "Unprocessable Entity",
+    "message" : "Appointment must start in the future",
+    "path" : "/api/appointments"
+  }
+}

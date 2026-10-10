@@ -1,0 +1,20 @@
+{
+  "status" : 200,
+  "body" : [ {
+    "id" : 1,
+    "fullName" : "Dr. Paula Test",
+    "specialty" : "Physiotherapy",
+    "workStart" : "08:00:00",
+    "workEnd" : "17:00:00",
+    "sessionPrice" : 150.00,
+    "active" : true
+  }, {
+    "id" : 2,
+    "fullName" : "Dr. Rui Test",
+    "specialty" : "Nutrition",
+    "workStart" : "10:00:00",
+    "workEnd" : "18:00:00",
+    "sessionPrice" : 200.00,
+    "active" : true
+  } ]
+}

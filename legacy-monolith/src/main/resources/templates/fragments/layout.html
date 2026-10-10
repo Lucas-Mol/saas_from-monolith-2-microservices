@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' · ' + ${instanceName}">Backoffice</title>
+    <link rel="stylesheet" th:href="@{/css/backoffice.css}">
+</head>
+<body>
+<header th:fragment="header">
+    <div class="brand" th:text="${instanceName}">Instance</div>
+    <nav>
+        <a th:href="@{/backoffice/appointments}">Appointments</a>
+        <a th:href="@{/backoffice/customers}">Customers</a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/backoffice/invoices}">Invoices</a>
+    </nav>
+    <form th:action="@{/logout}" method="post" class="logout">
+        <span sec:authentication="principal.fullName">User</span>
+        <button type="submit">Log out</button>
+    </form>
+</header>
+<div th:fragment="flash">
+    <p class="flash ok" th:if="${message}" th:text="${message}"></p>
+    <p class="flash error" th:if="${error}" th:text="${error}"></p>
+</div>
+</body>
+</html>

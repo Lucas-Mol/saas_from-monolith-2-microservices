@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: legacy-monolith
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/legacy_acme}
+    username: ${DB_USERNAME:legacy_acme}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+  thymeleaf:
+    cache: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      cookie:
+        name: ${SESSION_COOKIE_NAME:JSESSIONID}
+        http-only: true
+        same-site: lax
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+legacy:
+  instance-name: ${LEGACY_INSTANCE_NAME:Legacy Instance}
+  cancellation-min-hours: ${LEGACY_CANCELLATION_MIN_HOURS:24}

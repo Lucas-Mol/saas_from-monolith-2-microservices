@@ -1,0 +1,10 @@
+{
+  "status" : 409,
+  "body" : {
+    "timestamp" : "2026-01-12T08:00:00",
+    "status" : 409,
+    "error" : "Conflict",
+    "message" : "Only CONFIRMED appointments can be completed (current: SCHEDULED)",
+    "path" : "/api/appointments/2/complete"
+  }
+}

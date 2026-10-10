@@ -1,0 +1,13 @@
+{
+  "status" : 201,
+  "location" : "/api/customers/4",
+  "body" : {
+    "id" : 4,
+    "fullName" : "Dora New",
+    "email" : "dora@test.local",
+    "phone" : "+55 11 93333-0000",
+    "birthDate" : "1999-05-05",
+    "notes" : "Walk-in",
+    "createdAt" : "2026-01-12T08:00:00"
+  }
+}

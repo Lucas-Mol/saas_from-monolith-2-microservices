@@ -1,0 +1,3 @@
+legacy:
+  instance-name: Test Instance
+  cancellation-min-hours: 24

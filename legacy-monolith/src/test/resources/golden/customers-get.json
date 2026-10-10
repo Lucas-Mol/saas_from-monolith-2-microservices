@@ -1,0 +1,12 @@
+{
+  "status" : 200,
+  "body" : {
+    "id" : 2,
+    "fullName" : "Bob Test",
+    "email" : "bob@test.local",
+    "phone" : "+55 11 91111-0002",
+    "birthDate" : null,
+    "notes" : "Prefers morning slots",
+    "createdAt" : "2025-12-02T11:00:00"
+  }
+}

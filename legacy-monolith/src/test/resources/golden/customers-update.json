@@ -1,0 +1,12 @@
+{
+  "status" : 200,
+  "body" : {
+    "id" : 3,
+    "fullName" : "Cris Updated",
+    "email" : "cris.updated@test.local",
+    "phone" : null,
+    "birthDate" : null,
+    "notes" : null,
+    "createdAt" : "2025-12-03T12:00:00"
+  }
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('New appointment')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main>
+    <h1>New appointment</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <form method="post" th:action="@{/backoffice/appointments}" class="stacked">
+        <label>Customer
+            <select name="customerId" required>
+                <option th:each="c : ${customers}" th:value="${c.id}" th:text="${c.fullName}"></option>
+            </select>
+        </label>
+        <label>Professional
+            <select name="professionalId" required>
+                <option th:each="p : ${professionals}" th:value="${p.id}"
+                        th:text="${p.fullName} + ' (' + ${p.specialty} + ', ' + ${p.workStart} + '–' + ${p.workEnd} + ')'"></option>
+            </select>
+        </label>
+        <label>Start <input type="datetime-local" name="startTime" required></label>
+        <label>End <input type="datetime-local" name="endTime" required></label>
+        <label>Notes <textarea name="notes" maxlength="2000"></textarea></label>
+        <button type="submit">Schedule</button>
+    </form>
+</main>
+</body>
+</html>

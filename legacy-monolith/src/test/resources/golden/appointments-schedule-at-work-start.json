@@ -1,0 +1,15 @@
+{
+  "status" : 201,
+  "location" : "/api/appointments/8",
+  "body" : {
+    "id" : 8,
+    "customerId" : 3,
+    "professionalId" : 1,
+    "startTime" : "2026-01-14T08:00:00",
+    "endTime" : "2026-01-14T09:00:00",
+    "status" : "SCHEDULED",
+    "notes" : null,
+    "cancelReason" : null,
+    "createdAt" : "2026-01-12T08:00:00"
+  }
+}

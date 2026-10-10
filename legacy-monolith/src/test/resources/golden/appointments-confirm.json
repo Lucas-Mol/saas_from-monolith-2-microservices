@@ -1,0 +1,14 @@
+{
+  "status" : 200,
+  "body" : {
+    "id" : 2,
+    "customerId" : 2,
+    "professionalId" : 1,
+    "startTime" : "2026-01-12T10:00:00",
+    "endTime" : "2026-01-12T11:00:00",
+    "status" : "CONFIRMED",
+    "notes" : "First visit",
+    "cancelReason" : null,
+    "createdAt" : "2026-01-03T09:00:00"
+  }
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Invoices')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main>
+    <h1>Invoices</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <form method="post" th:action="@{/backoffice/invoices}" class="inline">
+        <select name="customerId" required>
+            <option th:each="c : ${customerList}" th:value="${c.id}" th:text="${c.fullName}"></option>
+        </select>
+        <button type="submit">Invoice completed appointments</button>
+    </form>
+    <table>
+        <thead><tr><th>#</th><th>Customer</th><th>Issued</th><th>Lines</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="i : ${invoices}">
+            <td th:text="${i.id}"></td>
+            <td th:text="${customers[i.customerId]?.fullName}"></td>
+            <td th:text="${#temporals.format(i.issuedAt, 'yyyy-MM-dd HH:mm')}"></td>
+            <td><div th:each="l : ${i.lines}" th:text="${l.description}"></div></td>
+            <td th:text="${#numbers.formatDecimal(i.total, 1, 2)}"></td>
+            <td><span class="status" th:classappend="${i.status.name().toLowerCase()}" th:text="${i.status}"></span></td>
+            <td class="actions">
+                <form th:if="${i.status.name() == 'OPEN'}" method="post" th:action="@{/backoffice/invoices/{id}/pay(id=${i.id})}">
+                    <button type="submit">Mark as paid</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

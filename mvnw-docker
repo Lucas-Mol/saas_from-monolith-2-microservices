@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MAVEN_IMAGE="${MAVEN_IMAGE:-maven:3.9-eclipse-temurin-21}"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+M2_DIR="${M2_DIR:-$HOME/.m2}"
+DOCKER_SOCK="${DOCKER_SOCK:-/var/run/docker.sock}"
+
+mkdir -p "$M2_DIR"
+
+if [[ ! -S "$DOCKER_SOCK" ]]; then
+  echo "Docker socket not found at $DOCKER_SOCK" >&2
+  exit 1
+fi
+
+tty_flag=()
+if [[ -t 0 && -t 1 ]]; then
+  tty_flag=(-it)
+fi
+
+exec docker run --rm "${tty_flag[@]}" \
+  --user "$(id -u):$(id -g)" \
+  --group-add "$(stat -c %g "$DOCKER_SOCK")" \
+  --add-host=host.docker.internal:host-gateway \
+  -v "$PROJECT_DIR":/workspace \
+  -v "$M2_DIR":/var/maven/.m2 \
+  -v "$DOCKER_SOCK":/var/run/docker.sock \
+  -e HOME=/tmp \
+  -e MAVEN_CONFIG=/var/maven/.m2 \
+  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  -w /workspace \
+  "$MAVEN_IMAGE" \
+  mvn -B -Duser.home=/var/maven "$@"

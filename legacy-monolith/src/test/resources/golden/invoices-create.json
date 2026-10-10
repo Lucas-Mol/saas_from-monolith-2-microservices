@@ -1,0 +1,18 @@
+{
+  "status" : 201,
+  "location" : "/api/invoices/2",
+  "body" : {
+    "id" : 2,
+    "customerId" : 2,
+    "status" : "OPEN",
+    "total" : 150.00,
+    "issuedAt" : "2026-01-12T08:00:00",
+    "paidAt" : null,
+    "lines" : [ {
+      "id" : 2,
+      "appointmentId" : 5,
+      "description" : "Physiotherapy session with Dr. Paula Test on 2026-01-09",
+      "amount" : 150.00
+    } ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "status" : 200,
+  "body" : [ {
+    "id" : 5,
+    "customerId" : 2,
+    "professionalId" : 1,
+    "startTime" : "2026-01-09T08:00:00",
+    "endTime" : "2026-01-09T09:00:00",
+    "status" : "COMPLETED",
+    "notes" : null,
+    "cancelReason" : null,
+    "createdAt" : "2025-12-21T09:00:00"
+  }, {
+    "id" : 1,
+    "customerId" : 1,
+    "professionalId" : 1,
+    "startTime" : "2026-01-12T09:00:00",
+    "endTime" : "2026-01-12T10:00:00",
+    "status" : "CONFIRMED",
+    "notes" : null,
+    "cancelReason" : null,
+    "createdAt" : "2026-01-02T09:00:00"
+  }, {
+    "id" : 2,
+    "customerId" : 2,
+    "professionalId" : 1,
+    "startTime" : "2026-01-12T10:00:00",
+    "endTime" : "2026-01-12T11:00:00",
+    "status" : "SCHEDULED",
+    "notes" : "First visit",
+    "cancelReason" : null,
+    "createdAt" : "2026-01-03T09:00:00"
+  }, {
+    "id" : 6,
+    "customerId" : 1,
+    "professionalId" : 1,
+    "startTime" : "2026-01-15T16:00:00",
+    "endTime" : "2026-01-15T17:00:00",
+    "status" : "SCHEDULED",
+    "notes" : null,
+    "cancelReason" : null,
+    "createdAt" : "2026-01-05T09:00:00"
+  } ]
+}

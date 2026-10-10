@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Appointments')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main>
+    <h1>Appointments</h1>
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <form method="get" th:action="@{/backoffice/appointments}" class="inline">
+        <input type="date" name="date" th:value="${date}">
+        <button type="submit">Show</button>
+        <a th:href="@{/backoffice/appointments/new}" class="button">New appointment</a>
+    </form>
+    <table>
+        <thead>
+        <tr><th>#</th><th>Time</th><th>Customer</th><th>Professional</th><th>Status</th><th>Notes</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:if="${appointments.isEmpty()}"><td colspan="7">No appointments for this day.</td></tr>
+        <tr th:each="a : ${appointments}">
+            <td th:text="${a.id}"></td>
+            <td th:text="${#temporals.format(a.startTime, 'HH:mm')} + '–' + ${#temporals.format(a.endTime, 'HH:mm')}"></td>
+            <td th:text="${customers[a.customerId]?.fullName}"></td>
+            <td th:text="${professionals[a.professionalId]?.fullName}"></td>
+            <td><span class="status" th:classappend="${a.status.name().toLowerCase()}" th:text="${a.status}"></span></td>
+            <td th:text="${a.notes}"></td>
+            <td class="actions">
+                <form th:if="${a.status.name() == 'SCHEDULED'}" method="post"
+                      th:action="@{/backoffice/appointments/{id}/confirm(id=${a.id})}">
+                    <input type="hidden" name="date" th:value="${date}">
+                    <button type="submit">Confirm</button>
+                </form>
+                <form th:if="${a.status.name() == 'CONFIRMED'}" method="post"
+                      th:action="@{/backoffice/appointments/{id}/complete(id=${a.id})}">
+                    <input type="hidden" name="date" th:value="${date}">
+                    <button type="submit">Complete</button>
+                </form>
+                <form th:if="${a.status.name() == 'SCHEDULED' or a.status.name() == 'CONFIRMED'}" method="post"
+                      th:action="@{/backoffice/appointments/{id}/cancel(id=${a.id})}">
+                    <input type="hidden" name="date" th:value="${date}">
+                    <button type="submit" class="danger">Cancel</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

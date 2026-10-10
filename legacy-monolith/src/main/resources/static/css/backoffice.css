@@ -1,0 +1,25 @@
+body { font-family: Verdana, Arial, sans-serif; font-size: 13px; margin: 0; background: #eef0f3; color: #222; }
+header { display: flex; align-items: center; gap: 24px; background: #2f4f6f; color: #fff; padding: 8px 16px; }
+header .brand { font-weight: bold; font-size: 16px; }
+header nav a { color: #fff; margin-right: 12px; }
+header .logout { margin-left: auto; }
+main { padding: 16px; max-width: 1100px; }
+table { border-collapse: collapse; width: 100%; background: #fff; margin-top: 12px; }
+th, td { border: 1px solid #c8ccd2; padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: #dde2e8; }
+.actions form { display: inline; }
+.inline { display: flex; gap: 8px; align-items: center; }
+.stacked { display: flex; flex-direction: column; gap: 8px; max-width: 420px; }
+.stacked label { display: flex; flex-direction: column; }
+.flash { padding: 8px; border: 1px solid; }
+.flash.ok { background: #e3f4e1; border-color: #7bb174; }
+.flash.error { background: #f9e0e0; border-color: #c46a6a; }
+.status { padding: 1px 6px; border-radius: 3px; background: #ddd; }
+.status.confirmed, .status.paid { background: #cfe8cb; }
+.status.cancelled, .status.void { background: #f0cccc; }
+.status.completed { background: #cbd9ef; }
+button.danger { color: #a00; }
+.button { padding: 2px 8px; border: 1px solid #888; background: #f4f4f4; color: #222; text-decoration: none; }
+body.login main { max-width: 320px; margin: 80px auto; background: #fff; padding: 24px; border: 1px solid #c8ccd2; }
+body.login form { display: flex; flex-direction: column; gap: 10px; }
+body.login label { display: flex; flex-direction: column; }
