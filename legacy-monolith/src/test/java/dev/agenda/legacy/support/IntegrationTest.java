@@ -16,7 +16,7 @@ import org.springframework.test.context.jdbc.Sql;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({PostgresContainerConfig.class, FixedClockConfig.class})
+@Import({PostgresContainerConfig.class, FixedClockConfig.class, TestSecurityConfig.class})
 @Sql("/db/test-data.sql")
 public @interface IntegrationTest {
 }

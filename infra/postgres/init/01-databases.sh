@@ -1,5 +1,4 @@
 #!/bin/bash
-# Creates one database and one login role per legacy instance (single-tenant: one DB per customer).
 set -euo pipefail
 
 create_database() {
@@ -14,3 +13,4 @@ SQL
 
 create_database legacy_acme legacy_acme "${LEGACY_ACME_DB_PASSWORD:?LEGACY_ACME_DB_PASSWORD is required}"
 create_database legacy_bella legacy_bella "${LEGACY_BELLA_DB_PASSWORD:?LEGACY_BELLA_DB_PASSWORD is required}"
+create_database keycloak keycloak "${KEYCLOAK_DB_PASSWORD:?KEYCLOAK_DB_PASSWORD is required}"

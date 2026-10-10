@@ -37,3 +37,8 @@ management:
 legacy:
   instance-name: ${LEGACY_INSTANCE_NAME:Legacy Instance}
   cancellation-min-hours: ${LEGACY_CANCELLATION_MIN_HOURS:24}
+  tenant-id: ${LEGACY_TENANT_ID}
+  oidc:
+    issuer-uri: ${OIDC_ISSUER_URI:http://keycloak.localhost:8180/realms/agenda}
+    client-id: ${OIDC_CLIENT_ID}
+    client-secret: ${OIDC_CLIENT_SECRET}

@@ -4,6 +4,7 @@ WORKDIR /workspace
 COPY pom.xml .
 COPY legacy-monolith/pom.xml legacy-monolith/
 COPY gateway/pom.xml gateway/
+COPY web/pom.xml web/
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl legacy-monolith -am dependency:go-offline
 COPY legacy-monolith/src legacy-monolith/src
 # Tests run via ./mvnw-docker; the image build must not depend on a Docker daemon.

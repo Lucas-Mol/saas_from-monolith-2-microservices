@@ -15,58 +15,52 @@ class TenantResolverTest {
     private final TenantResolver resolver = new TenantResolver("localhost");
 
     @Test
-    void resolvesTenantFromSubdomain() {
-        assertThat(resolver.resolve("acme-clinic.localhost:8080", List.of())).isEqualTo(new Resolved("acme-clinic"));
+    void resolvesBrowserTenantFromSubdomain() {
+        assertThat(resolver.fromHost("acme-clinic.localhost:8080")).isEqualTo(new Resolved("acme-clinic"));
+        assertThat(resolver.fromHost("ACME-Clinic.LocalHost.")).isEqualTo(new Resolved("acme-clinic"));
     }
 
     @Test
-    void ignoresHostCaseAndTrailingDot() {
-        assertThat(resolver.resolve("ACME-Clinic.LocalHost.", List.of())).isEqualTo(new Resolved("acme-clinic"));
+    void reportsMissingTenantForHostsWithoutTenantSubdomain() {
+        assertThat(resolver.fromHost("localhost:8080")).isEqualTo(new Unresolved(Reason.MISSING));
+        assertThat(resolver.fromHost(null)).isEqualTo(new Unresolved(Reason.MISSING));
+        assertThat(resolver.fromHost("[::1]:8080")).isEqualTo(new Unresolved(Reason.MISSING));
+        assertThat(resolver.fromHost("acme-clinic.example.com")).isEqualTo(new Unresolved(Reason.MISSING));
+        assertThat(resolver.fromHost("acme-clinic-localhost")).isEqualTo(new Unresolved(Reason.MISSING));
     }
 
     @Test
-    void resolvesTenantFromHeader() {
-        assertThat(resolver.resolve("localhost:8080", List.of("bella-salon"))).isEqualTo(new Resolved("bella-salon"));
+    void rejectsMalformedSubdomains() {
+        assertThat(resolver.fromHost("a.b.localhost")).isEqualTo(new Unresolved(Reason.INVALID));
+        assertThat(resolver.fromHost(".localhost")).isEqualTo(new Unresolved(Reason.INVALID));
+        assertThat(resolver.fromHost("-acme.localhost")).isEqualTo(new Unresolved(Reason.INVALID));
+        assertThat(resolver.fromHost("a".repeat(64) + ".localhost")).isEqualTo(new Unresolved(Reason.INVALID));
     }
 
     @Test
-    void acceptsMatchingSubdomainAndHeader() {
-        assertThat(resolver.resolve("acme-clinic.localhost", List.of("acme-clinic")))
+    void resolvesApiTenantFromTheToken() {
+        assertThat(resolver.fromToken("localhost:8080", List.of("bella-salon"))).isEqualTo(new Resolved("bella-salon"));
+        assertThat(resolver.fromToken("gateway:8080", List.of("bella-salon"))).isEqualTo(new Resolved("bella-salon"));
+    }
+
+    @Test
+    void acceptsTokenTenantMatchingTheSubdomain() {
+        assertThat(resolver.fromToken("acme-clinic.localhost", List.of("acme-clinic")))
                 .isEqualTo(new Resolved("acme-clinic"));
     }
 
     @Test
-    void rejectsConflictingSubdomainAndHeader() {
-        assertThat(resolver.resolve("acme-clinic.localhost", List.of("bella-salon")))
+    void rejectsTokenTenantThatDiffersFromTheSubdomain() {
+        assertThat(resolver.fromToken("acme-clinic.localhost", List.of("bella-salon")))
                 .isEqualTo(new Unresolved(Reason.CONFLICT));
     }
 
     @Test
-    void reportsMissingTenantWhenNothingIdentifiesIt() {
-        assertThat(resolver.resolve("localhost:8080", List.of())).isEqualTo(new Unresolved(Reason.MISSING));
-        assertThat(resolver.resolve(null, List.of())).isEqualTo(new Unresolved(Reason.MISSING));
-        assertThat(resolver.resolve("[::1]:8080", List.of())).isEqualTo(new Unresolved(Reason.MISSING));
-    }
-
-    @Test
-    void ignoresHostsOutsideTheBaseDomain() {
-        assertThat(resolver.resolve("acme-clinic.example.com", List.of())).isEqualTo(new Unresolved(Reason.MISSING));
-        assertThat(resolver.resolve("acme-clinic-localhost", List.of())).isEqualTo(new Unresolved(Reason.MISSING));
-    }
-
-    @Test
-    void rejectsMalformedTenantIds() {
-        assertThat(resolver.resolve("localhost", List.of("Acme_Clinic"))).isEqualTo(new Unresolved(Reason.INVALID));
-        assertThat(resolver.resolve("localhost", List.of(""))).isEqualTo(new Unresolved(Reason.INVALID));
-        assertThat(resolver.resolve("localhost", List.of("-acme"))).isEqualTo(new Unresolved(Reason.INVALID));
-        assertThat(resolver.resolve("localhost", List.of("a".repeat(64)))).isEqualTo(new Unresolved(Reason.INVALID));
-        assertThat(resolver.resolve("a.b.localhost", List.of())).isEqualTo(new Unresolved(Reason.INVALID));
-        assertThat(resolver.resolve(".localhost", List.of())).isEqualTo(new Unresolved(Reason.INVALID));
-    }
-
-    @Test
-    void rejectsRepeatedTenantHeaders() {
-        assertThat(resolver.resolve("localhost", List.of("acme-clinic", "acme-clinic")))
+    void rejectsTokensWithoutExactlyOneValidTenant() {
+        assertThat(resolver.fromToken("localhost", List.of())).isEqualTo(new Unresolved(Reason.MISSING));
+        assertThat(resolver.fromToken("localhost", List.of("acme-clinic", "bella-salon")))
                 .isEqualTo(new Unresolved(Reason.INVALID));
+        assertThat(resolver.fromToken("localhost", List.of("Acme_Clinic"))).isEqualTo(new Unresolved(Reason.INVALID));
+        assertThat(resolver.fromToken("a.b.localhost", List.of("acme-clinic"))).isEqualTo(new Unresolved(Reason.INVALID));
     }
 }

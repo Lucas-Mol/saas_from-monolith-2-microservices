@@ -21,6 +21,7 @@
     <modules>
         <module>legacy-monolith</module>
         <module>gateway</module>
+        <module>web</module>
     </modules>
 
     <properties>
@@ -28,6 +29,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud.version>2025.0.3</spring-cloud.version>
         <wiremock.version>3.13.2</wiremock.version>
+        <testcontainers-keycloak.version>3.9.1</testcontainers-keycloak.version>
+        <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
+        <node.version>v22.23.3</node.version>
+        <keycloak.image>quay.io/keycloak/keycloak:26.7.5</keycloak.image>
     </properties>
 
     <dependencyManagement>
@@ -43,6 +48,11 @@
                 <groupId>org.wiremock</groupId>
                 <artifactId>wiremock-standalone</artifactId>
                 <version>${wiremock.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.dasniko</groupId>
+                <artifactId>testcontainers-keycloak</artifactId>
+                <version>${testcontainers-keycloak.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,3 +1,14 @@
 legacy:
   instance-name: Test Instance
   cancellation-min-hours: 24
+  tenant-id: test-tenant
+  oidc:
+    issuer-uri: http://issuer.test/realms/agenda
+    client-id: backoffice-test
+    client-secret: test-secret
+
+server:
+  servlet:
+    session:
+      cookie:
+        name: TEST_SESSION

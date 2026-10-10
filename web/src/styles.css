@@ -1,0 +1,92 @@
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #1d2433;
+  background: #f6f7fb;
+}
+
+body {
+  margin: 0;
+  padding-bottom: 3rem;
+}
+
+header.top {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #1d2433;
+  color: #fff;
+}
+
+header.top nav {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+header.top a {
+  color: #c9d4ff;
+  text-decoration: none;
+}
+
+header.top a.active {
+  color: #fff;
+  font-weight: 600;
+}
+
+header.top .actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+main {
+  padding: 1.5rem;
+  max-width: 960px;
+}
+
+main.center {
+  margin: 4rem auto;
+  text-align: center;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e3e6ee;
+}
+
+.form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 420px;
+}
+
+.form label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.error {
+  color: #b42318;
+}
+
+footer.debug {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.5rem 1.5rem;
+  background: #fff8db;
+  border-top: 1px solid #e8d48a;
+  font-size: 0.85rem;
+}

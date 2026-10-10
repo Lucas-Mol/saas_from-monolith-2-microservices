@@ -1,9 +1,8 @@
 package dev.agenda.legacy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -15,8 +14,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
 import dev.agenda.legacy.appointments.AppointmentRepository;
@@ -26,15 +23,15 @@ import dev.agenda.legacy.billing.InvoiceStatus;
 import dev.agenda.legacy.customers.Customer;
 import dev.agenda.legacy.customers.CustomerRepository;
 import dev.agenda.legacy.support.IntegrationTest;
+import dev.agenda.legacy.support.TestJwts;
+import dev.agenda.legacy.support.TestOidcUsers;
+import dev.agenda.legacy.support.TestSecurityConfig;
 
 @IntegrationTest
 class BackofficeTest {
 
     @Autowired
     private MockMvc mvc;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
 
     @Autowired
     private AppointmentRepository appointmentRepository;
@@ -45,19 +42,22 @@ class BackofficeTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
-    private UserDetails admin() {
-        return userDetailsService.loadUserByUsername("admin@test.local");
-    }
-
-    private UserDetails staff() {
-        return userDetailsService.loadUserByUsername("staff@test.local");
+    @Test
+    void redirectsAnonymousUsersToSingleSignOn() throws Exception {
+        mvc.perform(get("/backoffice/appointments"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("**/oauth2/authorization/keycloak"));
     }
 
     @Test
-    void redirectsAnonymousUsersToLogin() throws Exception {
-        mvc.perform(get("/backoffice/appointments"))
+    void startsAuthorizationCodeFlowWithPkce() throws Exception {
+        String location = mvc.perform(get("/oauth2/authorization/keycloak"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("**/login"));
+                .andReturn().getResponse().getRedirectedUrl();
+
+        assertThat(location).startsWith(TestJwts.ISSUER + "/protocol/openid-connect/auth?")
+                .contains("response_type=code", "client_id=backoffice-test", "code_challenge_method=S256",
+                        "code_challenge=", "scope=openid");
     }
 
     @Test
@@ -68,20 +68,28 @@ class BackofficeTest {
     }
 
     @Test
-    void logsInWithSessionAndRedirectsToBackoffice() throws Exception {
-        mvc.perform(formLogin("/login").user("staff@test.local").password("test-password"))
-                .andExpect(redirectedUrl("/backoffice"));
+    void noLongerAcceptsLocalPasswords() throws Exception {
+        mvc.perform(post("/login").param("username", "staff@test.local").param("password", "test-password")
+                        .with(csrf()))
+                .andExpect(status().isMethodNotAllowed());
     }
 
     @Test
-    void rejectsInvalidLogin() throws Exception {
-        mvc.perform(formLogin("/login").user("staff@test.local").password("wrong"))
-                .andExpect(redirectedUrl("/login?error"));
+    void logsOutThroughTheIdentityProvider() throws Exception {
+        String location = mvc.perform(post("/logout")
+                        .with(oidcLogin().clientRegistration(TestSecurityConfig.registration())
+                                .oidcUser(TestOidcUsers.staff()))
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+
+        assertThat(location).startsWith(TestJwts.ISSUER + "/protocol/openid-connect/logout?")
+                .contains("id_token_hint=", "post_logout_redirect_uri=http://localhost/login?logout");
     }
 
     @Test
     void showsTodaysAgenda() throws Exception {
-        mvc.perform(get("/backoffice/appointments").with(user(staff())))
+        mvc.perform(get("/backoffice/appointments").with(oidcLogin().oidcUser(TestOidcUsers.staff())))
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.allOf(
                         Matchers.containsString("Ana Test"),
@@ -91,27 +99,26 @@ class BackofficeTest {
 
     @Test
     void customersCannotUseBackoffice() throws Exception {
-        UserDetails customer = userDetailsService.loadUserByUsername("ana.user@test.local");
-        mvc.perform(get("/backoffice/appointments").with(user(customer)))
+        mvc.perform(get("/backoffice/appointments").with(oidcLogin().oidcUser(TestOidcUsers.customer())))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void staffCannotOpenInvoices() throws Exception {
-        mvc.perform(get("/backoffice/invoices").with(user(staff())))
+        mvc.perform(get("/backoffice/invoices").with(oidcLogin().oidcUser(TestOidcUsers.staff())))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void requiresCsrfTokenOnForms() throws Exception {
-        mvc.perform(post("/backoffice/appointments/2/confirm").param("date", "2026-01-12").with(user(staff())))
+        mvc.perform(post("/backoffice/appointments/2/confirm").param("date", "2026-01-12").with(oidcLogin().oidcUser(TestOidcUsers.staff())))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void confirmsAppointmentFromBackoffice() throws Exception {
         mvc.perform(post("/backoffice/appointments/2/confirm").param("date", "2026-01-12")
-                        .with(user(staff())).with(csrf()))
+                        .with(oidcLogin().oidcUser(TestOidcUsers.staff())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/appointments?date=2026-01-12"));
 
         assertThat(appointmentRepository.findById(2L)).get()
@@ -121,7 +128,7 @@ class BackofficeTest {
     @Test
     void showsBusinessRuleErrorsAsFlashMessages() throws Exception {
         mvc.perform(post("/backoffice/appointments/2/cancel").param("date", "2026-01-12")
-                        .with(user(staff())).with(csrf()))
+                        .with(oidcLogin().oidcUser(TestOidcUsers.staff())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/appointments?date=2026-01-12"))
                 .andExpect(flash().attribute("error", "Appointments can only be cancelled at least 24 hours in advance"));
 
@@ -135,7 +142,7 @@ class BackofficeTest {
                         .param("customerId", "3").param("professionalId", "1")
                         .param("startTime", "2026-01-14T09:00").param("endTime", "2026-01-14T10:00")
                         .param("notes", "")
-                        .with(user(staff())).with(csrf()))
+                        .with(oidcLogin().oidcUser(TestOidcUsers.staff())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/appointments?date=2026-01-14"))
                 .andExpect(flash().attribute("message", "Appointment scheduled."));
 
@@ -150,7 +157,7 @@ class BackofficeTest {
         mvc.perform(post("/backoffice/customers")
                         .param("fullName", "  Eva Form  ").param("email", "").param("phone", "")
                         .param("birthDate", "").param("notes", "")
-                        .with(user(staff())).with(csrf()))
+                        .with(oidcLogin().oidcUser(TestOidcUsers.staff())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/customers"))
                 .andExpect(flash().attribute("message", "Customer created."));
 
@@ -163,12 +170,12 @@ class BackofficeTest {
 
     @Test
     void issuesAndPaysInvoice() throws Exception {
-        mvc.perform(post("/backoffice/invoices").param("customerId", "2").with(user(admin())).with(csrf()))
+        mvc.perform(post("/backoffice/invoices").param("customerId", "2").with(oidcLogin().oidcUser(TestOidcUsers.admin())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/invoices"))
                 .andExpect(flash().attribute("message", "Invoice issued."));
         assertThat(invoiceRepository.findById(2L)).get().extracting("status").isEqualTo(InvoiceStatus.OPEN);
 
-        mvc.perform(post("/backoffice/invoices/2/pay").with(user(admin())).with(csrf()))
+        mvc.perform(post("/backoffice/invoices/2/pay").with(oidcLogin().oidcUser(TestOidcUsers.admin())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/invoices"))
                 .andExpect(flash().attribute("message", "Invoice #2 marked as paid."));
         assertThat(invoiceRepository.findById(2L)).get().extracting("status").isEqualTo(InvoiceStatus.PAID);
@@ -176,7 +183,7 @@ class BackofficeTest {
 
     @Test
     void showsErrorWhenThereIsNothingToInvoice() throws Exception {
-        mvc.perform(post("/backoffice/invoices").param("customerId", "1").with(user(admin())).with(csrf()))
+        mvc.perform(post("/backoffice/invoices").param("customerId", "1").with(oidcLogin().oidcUser(TestOidcUsers.admin())).with(csrf()))
                 .andExpect(redirectedUrl("/backoffice/invoices"))
                 .andExpect(flash().attribute("error", "Customer 1 has no completed appointments to invoice"));
     }

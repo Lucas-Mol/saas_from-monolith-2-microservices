@@ -49,7 +49,7 @@ public class GatewayConfig {
     @Bean
     RouteLocator tenantMigrationRoute(RouteLocatorBuilder routes, TenantMigrationRoutingFilter routingFilter) {
         return routes.routes()
-                .route("tenant-migration", route -> route.not(path -> path.path("/actuator/**"))
+                .route("tenant-migration", route -> route.not(path -> path.path("/actuator/**", "/admin/**"))
                         .filters(filters -> filters.preserveHostHeader().filter(routingFilter))
                         .uri("no://op"))
                 .build();

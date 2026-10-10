@@ -1,6 +1,11 @@
 spring:
   application:
     name: gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://keycloak.localhost:8180/realms/agenda}
   cloud:
     gateway:
       server:
@@ -24,7 +29,7 @@ tenancy:
   base-domain: ${TENANCY_BASE_DOMAIN:localhost}
 
 # Strangler Fig migration table. A tenant moves to a new service by adding it to a route's migratedTenants;
-# rollback is removing it. Phase 1: nothing migrated yet, every tenant stays on its legacy instance.
+# rollback is removing it. Nothing migrated yet: every tenant stays on its legacy instance.
 #   routes:
 #     - path: /api/appointments/**
 #       target: http://scheduling-service:8080

@@ -1,5 +1,6 @@
 # Local environment. Passwords below are development-only defaults; override them through a .env file.
-# Each phase has a profile: `docker compose up` is phase 0, `docker compose --profile phase1 up` adds the gateway.
+# Postgres and the legacy instances always run; `docker compose --profile phase2 up` adds Keycloak, the gateway and the
+# SPA (the current state). Earlier phases are reproduced by checking out their `phase-N` tag.
 name: agenda-saas
 
 x-legacy-common: &legacy-common
@@ -11,6 +12,9 @@ x-legacy-common: &legacy-common
   depends_on:
     postgres:
       condition: service_healthy
+    keycloak:
+      condition: service_healthy
+      required: false
 
 services:
   postgres:
@@ -20,6 +24,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_dev}
       LEGACY_ACME_DB_PASSWORD: ${LEGACY_ACME_DB_PASSWORD:-legacy_acme_dev}
       LEGACY_BELLA_DB_PASSWORD: ${LEGACY_BELLA_DB_PASSWORD:-legacy_bella_dev}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_dev}
       TZ: ${TZ:-America/Sao_Paulo}
       PGTZ: ${TZ:-America/Sao_Paulo}
     volumes:
@@ -33,6 +38,41 @@ services:
       timeout: 3s
       retries: 20
 
+  keycloak:
+    profiles: ["phase2"]
+    image: quay.io/keycloak/keycloak:26.7.5
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_dev}
+      KC_HOSTNAME: http://keycloak.localhost:8180
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev}
+      # Substituted into identity/realm-export.json at import time.
+      BACKOFFICE_ACME_CLIENT_SECRET: ${BACKOFFICE_ACME_CLIENT_SECRET:-dev-backoffice-acme-secret}
+      BACKOFFICE_BELLA_CLIENT_SECRET: ${BACKOFFICE_BELLA_CLIENT_SECRET:-dev-backoffice-bella-secret}
+    volumes:
+      - ./identity/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "127.0.0.1:8180:8180"
+    networks:
+      default:
+        aliases:
+          - keycloak.localhost
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   legacy-acme:
     <<: *legacy-common
     environment:
@@ -42,6 +82,10 @@ services:
       FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed/acme
       LEGACY_INSTANCE_NAME: Acme Clinic
       LEGACY_CANCELLATION_MIN_HOURS: 24
+      LEGACY_TENANT_ID: acme-clinic
+      OIDC_ISSUER_URI: http://keycloak.localhost:8180/realms/agenda
+      OIDC_CLIENT_ID: backoffice-acme
+      OIDC_CLIENT_SECRET: ${BACKOFFICE_ACME_CLIENT_SECRET:-dev-backoffice-acme-secret}
       # Both instances share the localhost cookie jar (cookies ignore ports), so session cookies need distinct names.
       SESSION_COOKIE_NAME: ACME_SESSION
       TZ: ${TZ:-America/Sao_Paulo}
@@ -57,28 +101,50 @@ services:
       FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed/bella
       LEGACY_INSTANCE_NAME: Bella Salon
       LEGACY_CANCELLATION_MIN_HOURS: 12
+      LEGACY_TENANT_ID: bella-salon
+      OIDC_ISSUER_URI: http://keycloak.localhost:8180/realms/agenda
+      OIDC_CLIENT_ID: backoffice-bella
+      OIDC_CLIENT_SECRET: ${BACKOFFICE_BELLA_CLIENT_SECRET:-dev-backoffice-bella-secret}
       SESSION_COOKIE_NAME: BELLA_SESSION
       TZ: ${TZ:-America/Sao_Paulo}
     ports:
       - "127.0.0.1:8082:8080"
 
-  # Phase 1+: single entry point. Tenants are addressed as <tenant>.localhost:8080 (or with an X-Tenant-ID header).
+  # Single entry point. API calls take the tenant from the access token; browser requests from <tenant>.localhost:8080.
   gateway:
-    profiles: ["phase1"]
+    profiles: ["phase2"]
     build:
       context: .
       dockerfile: gateway/Dockerfile
     image: agenda/gateway:dev
     restart: unless-stopped
     depends_on:
-      - legacy-acme
-      - legacy-bella
+      legacy-acme:
+        condition: service_started
+      legacy-bella:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
     environment:
       LEGACY_ACME_URI: http://legacy-acme:8080
       LEGACY_BELLA_URI: http://legacy-bella:8080
+      OIDC_ISSUER_URI: http://keycloak.localhost:8180/realms/agenda
       TZ: ${TZ:-America/Sao_Paulo}
     ports:
       - "127.0.0.1:8080:8080"
+
+  # React SPA served by unprivileged nginx, which proxies /api to the gateway (same origin, no CORS).
+  web:
+    profiles: ["phase2"]
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    image: agenda/web:dev
+    restart: unless-stopped
+    depends_on:
+      - gateway
+    ports:
+      - "127.0.0.1:3000:8080"
 
 volumes:
   pgdata:

@@ -4,6 +4,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.G
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.containsEncodedParts;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -19,11 +20,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.PathContainer;
 import org.springframework.http.server.RequestPath;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 import dev.agenda.gateway.migration.RouteTarget;
 import dev.agenda.gateway.migration.RoutingTable;
+import dev.agenda.gateway.tenant.TenantClaim;
 import dev.agenda.gateway.tenant.TenantResolution;
 import dev.agenda.gateway.tenant.TenantResolver;
 
@@ -32,6 +37,10 @@ import reactor.core.publisher.Mono;
 public final class TenantMigrationRoutingFilter implements GatewayFilter, Ordered {
 
     public static final String ROUTED_TO_HEADER = "X-Routed-To";
+
+    static final String LEGACY_TENANT_HEADER = "X-Tenant-ID";
+
+    private static final PathPattern API_PATHS = PathPatternParser.defaultInstance.parse("/api/**");
 
     private static final Logger log = LoggerFactory.getLogger(TenantMigrationRoutingFilter.class);
 
@@ -59,14 +68,21 @@ public final class TenantMigrationRoutingFilter implements GatewayFilter, Ordere
         if (isAmbiguous(request.getPath())) {
             return problems.write(exchange, HttpStatus.BAD_REQUEST, "Request path is not allowed");
         }
+        String host = request.getHeaders().getFirst(HttpHeaders.HOST);
+        Mono<TenantResolution> resolution = API_PATHS.matches(request.getPath().pathWithinApplication())
+                ? exchange.getPrincipal()
+                        .map(principal -> fromToken(host, principal))
+                        .defaultIfEmpty(new TenantResolution.Unresolved(TenantResolution.Reason.MISSING))
+                : Mono.just(tenantResolver.fromHost(host));
+        return resolution.flatMap(result -> route(exchange, chain, result));
+    }
 
-        TenantResolution resolution = tenantResolver.resolve(request.getHeaders().getFirst(HttpHeaders.HOST),
-                request.getHeaders().getOrEmpty(TenantResolver.TENANT_HEADER));
+    private Mono<Void> route(ServerWebExchange exchange, GatewayFilterChain chain, TenantResolution resolution) {
         if (!(resolution instanceof TenantResolution.Resolved(String tenantId))) {
             return problems.write(exchange, HttpStatus.FORBIDDEN,
                     describe(((TenantResolution.Unresolved) resolution).reason()));
         }
-
+        ServerHttpRequest request = exchange.getRequest();
         Optional<RouteTarget> target = routingTable.resolve(tenantId, request.getPath().pathWithinApplication().value());
         if (target.isEmpty()) {
             return problems.write(exchange, HttpStatus.FORBIDDEN, "Unknown tenant");
@@ -82,9 +98,16 @@ public final class TenantMigrationRoutingFilter implements GatewayFilter, Ordere
                 request.getPath().value(), routeTarget.name());
 
         ServerWebExchange forwarded = exchange.mutate()
-                .request(builder -> builder.headers(headers -> headers.remove(TenantResolver.TENANT_HEADER)))
+                .request(builder -> builder.headers(headers -> headers.remove(LEGACY_TENANT_HEADER)))
                 .build();
         return chain.filter(forwarded);
+    }
+
+    private TenantResolution fromToken(String host, Principal principal) {
+        if (principal instanceof JwtAuthenticationToken token) {
+            return tenantResolver.fromToken(host, TenantClaim.tenantsOf(token.getToken()));
+        }
+        return new TenantResolution.Unresolved(TenantResolution.Reason.MISSING);
     }
 
     private static boolean isAmbiguous(RequestPath path) {
@@ -101,7 +124,7 @@ public final class TenantMigrationRoutingFilter implements GatewayFilter, Ordere
     private static String describe(TenantResolution.Reason reason) {
         return switch (reason) {
             case MISSING -> "Request does not identify a tenant";
-            case INVALID -> "Tenant identifier is malformed";
+            case INVALID -> "Tenant identifier is malformed or ambiguous";
             case CONFLICT -> "Conflicting tenant identifiers";
         };
     }

@@ -42,6 +42,17 @@ public final class RoutingTable {
         return Optional.of(target);
     }
 
+    public MigrationTableView view() {
+        List<MigrationTableView.TenantView> tenants = legacyUris.keySet().stream().sorted()
+                .map(MigrationTableView.TenantView::new)
+                .toList();
+        List<MigrationTableView.RouteView> routeViews = routes.stream()
+                .map(route -> new MigrationTableView.RouteView(route.pattern().getPatternString(), route.target().name(),
+                        route.migratedTenants().stream().sorted().toList()))
+                .toList();
+        return new MigrationTableView(tenants, routeViews);
+    }
+
     private MigratedRoute compile(Route route) {
         for (String tenantId : route.migratedTenants()) {
             if (!legacyUris.containsKey(tenantId)) {

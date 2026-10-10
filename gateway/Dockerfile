@@ -3,6 +3,7 @@ WORKDIR /workspace
 COPY pom.xml .
 COPY legacy-monolith/pom.xml legacy-monolith/
 COPY gateway/pom.xml gateway/
+COPY web/pom.xml web/
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl gateway -am dependency:go-offline
 COPY gateway/src gateway/src
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl gateway -am package -DskipTests

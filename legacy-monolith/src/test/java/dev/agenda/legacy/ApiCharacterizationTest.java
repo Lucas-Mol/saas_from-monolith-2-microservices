@@ -13,31 +13,36 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import dev.agenda.legacy.support.IntegrationTest;
+import dev.agenda.legacy.support.TestJwts;
 
 @IntegrationTest
 class ApiCharacterizationTest {
-
-    private static final String PASSWORD = "test-password";
 
     @Autowired
     private TestRestTemplate rest;
 
     private ResponseEntity<String> get(String user, String path) {
-        return rest.withBasicAuth(user, PASSWORD).getForEntity(path, String.class);
+        return rest.exchange(path, HttpMethod.GET, new HttpEntity<>(bearer(user)), String.class);
     }
 
     private ResponseEntity<String> post(String user, String path, String json) {
-        HttpHeaders headers = new HttpHeaders();
+        HttpHeaders headers = bearer(user);
         headers.setContentType(MediaType.APPLICATION_JSON);
-        return rest.withBasicAuth(user, PASSWORD).exchange(path, HttpMethod.POST, new HttpEntity<>(json, headers),
+        return rest.exchange(path, HttpMethod.POST, new HttpEntity<>(json, headers),
                 String.class);
     }
 
     private ResponseEntity<String> put(String user, String path, String json) {
-        HttpHeaders headers = new HttpHeaders();
+        HttpHeaders headers = bearer(user);
         headers.setContentType(MediaType.APPLICATION_JSON);
-        return rest.withBasicAuth(user, PASSWORD).exchange(path, HttpMethod.PUT, new HttpEntity<>(json, headers),
+        return rest.exchange(path, HttpMethod.PUT, new HttpEntity<>(json, headers),
                 String.class);
+    }
+
+    private static HttpHeaders bearer(String user) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(TestJwts.forUser(user));
+        return headers;
     }
 
     @Nested

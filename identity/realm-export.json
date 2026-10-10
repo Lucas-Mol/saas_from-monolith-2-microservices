@@ -1,0 +1,376 @@
+{
+  "realm": "agenda",
+  "enabled": true,
+  "displayName": "Agenda SaaS",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "organizationsEnabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Manages one tenant"
+      },
+      {
+        "name": "STAFF",
+        "description": "Front desk / professional of one tenant"
+      },
+      {
+        "name": "CUSTOMER",
+        "description": "End customer of one tenant"
+      },
+      {
+        "name": "PLATFORM_ADMIN",
+        "description": "Operates the platform (migration table); belongs to no tenant"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "admin@acme.test",
+      "email": "admin@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Acme",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "username": "staff@acme.test",
+      "email": "staff@acme.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Acme",
+      "lastName": "Front Desk",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "STAFF"
+      ]
+    },
+    {
+      "username": "alice@example.test",
+      "email": "alice@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Alice",
+      "lastName": "Martins",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CUSTOMER"
+      ]
+    },
+    {
+      "username": "admin@bella.test",
+      "email": "admin@bella.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Bella",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "username": "staff@bella.test",
+      "email": "staff@bella.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Bella",
+      "lastName": "Reception",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "STAFF"
+      ]
+    },
+    {
+      "username": "ops@agenda.test",
+      "email": "ops@agenda.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Platform",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "PLATFORM_ADMIN"
+      ]
+    }
+  ],
+  "organizations": [
+    {
+      "name": "Acme Clinic",
+      "alias": "acme-clinic",
+      "enabled": true,
+      "domains": [
+        {
+          "name": "acme.test",
+          "verified": false
+        }
+      ],
+      "members": [
+        {
+          "username": "admin@acme.test"
+        },
+        {
+          "username": "staff@acme.test"
+        },
+        {
+          "username": "alice@example.test"
+        }
+      ]
+    },
+    {
+      "name": "Bella Salon",
+      "alias": "bella-salon",
+      "enabled": true,
+      "domains": [
+        {
+          "name": "bella.test",
+          "verified": false
+        }
+      ],
+      "members": [
+        {
+          "username": "admin@bella.test"
+        },
+        {
+          "username": "staff@bella.test"
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "web",
+      "name": "Agenda web app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "frontchannelLogout": false,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-organization-membership-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "gateway-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "gateway",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "basic",
+        "acr",
+        "web-origins",
+        "profile",
+        "email",
+        "roles",
+        "organization"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "backoffice-acme",
+      "name": "Backoffice (acme-clinic)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${BACKOFFICE_ACME_CLIENT_SECRET:dev-backoffice-acme-secret}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": false,
+      "redirectUris": [
+        "http://acme-clinic.localhost:8080/login/oauth2/code/keycloak"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://acme-clinic.localhost:8080/*",
+        "backchannel.logout.url": "http://legacy-acme:8080/logout/connect/back-channel/keycloak",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-organization-membership-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles-in-id-token",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_access.roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "basic",
+        "acr",
+        "web-origins",
+        "profile",
+        "email",
+        "roles",
+        "organization"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "backoffice-bella",
+      "name": "Backoffice (bella-salon)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${BACKOFFICE_BELLA_CLIENT_SECRET:dev-backoffice-bella-secret}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": false,
+      "redirectUris": [
+        "http://bella-salon.localhost:8080/login/oauth2/code/keycloak"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://bella-salon.localhost:8080/*",
+        "backchannel.logout.url": "http://legacy-bella:8080/logout/connect/back-channel/keycloak",
+        "backchannel.logout.session.required": "true",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenant-id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-organization-membership-mapper",
+          "config": {
+            "claim.name": "tenant_id",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles-in-id-token",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "realm_access.roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "basic",
+        "acr",
+        "web-origins",
+        "profile",
+        "email",
+        "roles",
+        "organization"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "gateway",
+      "name": "Agenda API (audience)",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    }
+  ]
+}

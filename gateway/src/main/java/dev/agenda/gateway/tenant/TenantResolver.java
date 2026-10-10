@@ -8,10 +8,7 @@ import dev.agenda.gateway.tenant.TenantResolution.Reason;
 import dev.agenda.gateway.tenant.TenantResolution.Resolved;
 import dev.agenda.gateway.tenant.TenantResolution.Unresolved;
 
-
 public final class TenantResolver {
-
-    public static final String TENANT_HEADER = "X-Tenant-ID";
 
     private static final Pattern TENANT_ID = Pattern.compile("[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?");
 
@@ -28,23 +25,27 @@ public final class TenantResolver {
         return tenantId != null && TENANT_ID.matcher(tenantId).matches();
     }
 
-    public TenantResolution resolve(String host, List<String> headerValues) {
-        if (headerValues.size() > 1) {
+    public TenantResolution fromHost(String host) {
+        String label = subdomainOf(host);
+        if (label == null) {
+            return new Unresolved(Reason.MISSING);
+        }
+        return isValidTenantId(label) ? new Resolved(label) : new Unresolved(Reason.INVALID);
+    }
+
+    public TenantResolution fromToken(String host, List<String> tokenTenants) {
+        if (tokenTenants.isEmpty()) {
+            return new Unresolved(Reason.MISSING);
+        }
+        if (tokenTenants.size() > 1 || !isValidTenantId(tokenTenants.get(0))) {
             return new Unresolved(Reason.INVALID);
         }
-        String fromHeader = headerValues.isEmpty() ? null : headerValues.get(0).trim();
-        if (fromHeader != null && !isValidTenantId(fromHeader)) {
-            return new Unresolved(Reason.INVALID);
-        }
-        String fromHost = subdomainOf(host);
-        if (fromHost != null && !isValidTenantId(fromHost)) {
-            return new Unresolved(Reason.INVALID);
-        }
-        if (fromHost != null && fromHeader != null && !fromHost.equals(fromHeader)) {
-            return new Unresolved(Reason.CONFLICT);
-        }
-        String tenantId = fromHost != null ? fromHost : fromHeader;
-        return tenantId != null ? new Resolved(tenantId) : new Unresolved(Reason.MISSING);
+        String tenantId = tokenTenants.get(0);
+        return switch (fromHost(host)) {
+            case Resolved(String hostTenant) when !hostTenant.equals(tenantId) -> new Unresolved(Reason.CONFLICT);
+            case Unresolved(Reason reason) when reason == Reason.INVALID -> new Unresolved(Reason.INVALID);
+            default -> new Resolved(tenantId);
+        };
     }
 
     private String subdomainOf(String host) {
