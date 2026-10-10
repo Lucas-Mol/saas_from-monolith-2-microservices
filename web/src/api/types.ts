@@ -21,6 +21,8 @@ export interface Professional {
   id: number;
   fullName: string;
   specialty: string;
+  workStart: string;
+  workEnd: string;
 }
 
 export interface Invoice {

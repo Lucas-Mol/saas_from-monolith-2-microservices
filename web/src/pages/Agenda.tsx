@@ -1,17 +1,18 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import type { ApiClient } from '../api/client';
 import type { Appointment, Customer, Professional } from '../api/types';
+import { Icon } from '../components/Icon';
+import { ErrorCallout, PageHeader, SkeletonRows } from '../components/States';
 import { useAsync } from '../components/useAsync';
+import { addDays, formatLongDate, isValidIsoDate, todayIso } from '../lib/time';
+import { DayBook } from './DayBook';
 
-export function todayIso(): string {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-}
-
-export function Agenda({ api }: { api: ApiClient }) {
+export function Agenda({ api, clinicName }: { api: ApiClient; clinicName: string }) {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const date = params.get('date') ?? todayIso();
+  const requested = params.get('date');
+  const date = isValidIsoDate(requested) ? requested : todayIso();
   const { data, error, loading } = useAsync(
     () =>
       Promise.all([
@@ -22,42 +23,66 @@ export function Agenda({ api }: { api: ApiClient }) {
     [api, date],
   );
 
+  const goTo = (day: string) => setParams({ date: day });
   const [appointments, customers, professionals] = data ?? [[], [], []];
-  const customerName = (id: number) => customers.find((c) => c.id === id)?.fullName ?? `#${id}`;
-  const professionalName = (id: number) => professionals.find((p) => p.id === id)?.fullName ?? `#${id}`;
+  const active = appointments.filter((a) => a.status !== 'CANCELLED');
+  const confirmed = appointments.filter((a) => a.status === 'CONFIRMED').length;
+  const cancelled = appointments.length - active.length;
 
   return (
-    <section>
-      <h1>Agenda</h1>
-      <label>
-        Day <input type="date" value={date} onChange={(e) => e.target.value && setParams({ date: e.target.value })} />
-      </label>
-      {loading && <p>Loading…</p>}
-      {error && <p className="error">{error}</p>}
-      {!loading && !error && appointments.length === 0 && <p>No appointments on this day.</p>}
-      {appointments.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Customer</th>
-              <th>Professional</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {appointments.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  {a.startTime.slice(11, 16)}–{a.endTime.slice(11, 16)}
-                </td>
-                <td>{customerName(a.customerId)}</td>
-                <td>{professionalName(a.professionalId)}</td>
-                <td>{a.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <section className="page">
+      <PageHeader eyebrow={clinicName} title={formatLongDate(date)}>
+        <div className="day-nav" role="group" aria-label="Change day">
+          <button type="button" className="button-icon" onClick={() => goTo(addDays(date, -1))} aria-label="Previous day">
+            <Icon name="chevronLeft" />
+          </button>
+          <button type="button" className="button-quiet" onClick={() => goTo(todayIso())} disabled={date === todayIso()}>
+            Today
+          </button>
+          <button type="button" className="button-icon" onClick={() => goTo(addDays(date, 1))} aria-label="Next day">
+            <Icon name="chevronRight" />
+          </button>
+          <input
+            type="date"
+            className="date-input"
+            aria-label="Pick a day"
+            value={date}
+            onChange={(e) => isValidIsoDate(e.target.value) && goTo(e.target.value)}
+          />
+        </div>
+        <Link className="button-primary" to={`/appointments/new?date=${date}`}>
+          <Icon name="plus" /> Book appointment
+        </Link>
+      </PageHeader>
+
+      {error && <ErrorCallout title="The agenda could not be loaded.">{error}</ErrorCallout>}
+      {loading && <SkeletonRows rows={8} />}
+      {data && (
+        <>
+          <p className="summary">
+            <span>
+              <strong className="mono">{active.length}</strong> {active.length === 1 ? 'appointment' : 'appointments'}
+            </span>
+            <span>
+              <strong className="mono">{confirmed}</strong> confirmed
+            </span>
+            {cancelled > 0 && (
+              <span>
+                <strong className="mono">{cancelled}</strong> cancelled
+              </span>
+            )}
+            {appointments.length === 0 && <span className="summary-hint">Pick a free slot below to book the first one.</span>}
+          </p>
+          <DayBook
+            date={date}
+            appointments={appointments}
+            customers={customers}
+            professionals={professionals}
+            onBook={(professionalId, start) =>
+              navigate(`/appointments/new?date=${date}&professionalId=${professionalId}&start=${start}`)
+            }
+          />
+        </>
       )}
     </section>
   );
